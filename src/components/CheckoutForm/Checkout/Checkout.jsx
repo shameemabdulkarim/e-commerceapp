@@ -5,10 +5,9 @@ import {
   Step,
   StepLabel,
   Typography,
-  CircularProgress,
-  Divider,
-  Button,
+  CssBaseline
 } from "@material-ui/core";
+import {useNavigate} from 'react-router-dom'
 
 import useStyles from "./styles";
 import AdressForm from "../AdressForm";
@@ -18,11 +17,12 @@ import { commerce } from "../../../lib/commerce";
 
 const steps = ["Shipping Address", "Payment Details"];
 
-const Checkout = ({ cart }) => {
+const Checkout = ({ cart, order, onCaptureCheckout, error }) => {
   const classes = useStyles();
+  const navigate=useNavigate()
   const [activeStep, setActiveStep] = useState(0);
   const [checkoutToken, setCheckoutToken] = useState(null);
-  const [shippingData,setShippingData] = useState({})
+  const [shippingData, setShippingData] = useState({});
 
   useEffect(() => {
     const generateToken = async () => {
@@ -31,27 +31,37 @@ const Checkout = ({ cart }) => {
           type: "cart",
         });
         setCheckoutToken(token);
-      } catch (err) {}
+      } catch (err) {
+        navigate('/')
+
+      }
     };
     generateToken();
   }, [cart]);
 
-  const nextStep=() => setActiveStep((prevActiveStep)=> prevActiveStep+1)
-  const backStep=() => setActiveStep((prevActiveStep)=> prevActiveStep-1)
+  const nextStep = () => setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  const backStep = () => setActiveStep((prevActiveStep) => prevActiveStep - 1);
 
-  const next = (data) =>{
+  const next = (data) => {
     setShippingData(data);
     nextStep();
-  }
+  };
   const Form = () =>
     activeStep === 0 ? (
       <AdressForm checkoutToken={checkoutToken} next={next} />
     ) : (
-      <PaymentForm shippingData={shippingData} checkoutToken={checkoutToken} backStep={backStep}/>
+      <PaymentForm
+        shippingData={shippingData}
+        checkoutToken={checkoutToken}
+        backStep={backStep}
+        nextStep={nextStep}
+        onCaptureCheckout={onCaptureCheckout}
+      />
     );
 
   return (
     <>
+      <CssBaseline/>
       <div className={classes.toolbar} />
       <main className={classes.layout}>
         <Paper className={classes.paper}>
@@ -65,7 +75,11 @@ const Checkout = ({ cart }) => {
               </Step>
             ))}
           </Stepper>
-          {activeStep === steps.length ? <Confirmation /> : checkoutToken && <Form />}
+          {activeStep === steps.length ? (
+            <Confirmation order={order} />
+          ) : (
+            checkoutToken && <Form />
+          )}
         </Paper>
       </main>
     </>
